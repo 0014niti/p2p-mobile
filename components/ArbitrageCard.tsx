@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 
 export default function ArbitrageCard({ route }: { route: any }) {
   return (
@@ -29,7 +29,7 @@ export default function ArbitrageCard({ route }: { route: any }) {
       
       <TouchableOpacity
         className="w-full bg-blue-50/50 dark:bg-blue-900/20 border border-blue-200/60 dark:border-blue-800/50 py-3 rounded-xl items-center"
-        onPress={() => alert('Phase 3: This will automatically post a beautiful widget into the Nostr Global Chat!')}
+        onPress={() => Alert.alert('Share', 'Phase 3: This will automatically post a beautiful widget into the Nostr Global Chat!')}
       >
         <Text className="text-blue-700 dark:text-blue-400 font-bold text-xs">Share to Global OTC Chat 💬</Text>
       </TouchableOpacity>
