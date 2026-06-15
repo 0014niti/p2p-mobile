@@ -3,9 +3,14 @@
   "compilerOptions": {
     "strict": true,
     "jsx": "react-native",
-    "lib": ["es2019", "es2017"],
+    "lib": [
+      "es2019",
+      "es2017"
+    ],
     "skipLibCheck": true,
-    "types": ["nativewind/types"],
+    "types": [
+      "nativewind/types"
+    ],
     "paths": {
       "@/*": [
         "./*"
@@ -15,8 +20,6 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts",
     "nativewind-env.d.ts"
   ]
 }
