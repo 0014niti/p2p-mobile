@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PriceAlert, addAlert, removeAlert } from '../src/lib/alerts';
 
 interface AlertSetupModalProps {
-  modalRef: React.RefObject<BottomSheetModal>;
+  modalRef: React.RefObject<BottomSheetModal | null>;
   fiat: string;
   crypto: string;
   tradeType: 'buy' | 'sell';

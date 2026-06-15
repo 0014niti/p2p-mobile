@@ -281,13 +281,13 @@ export default function TerminalScreen() {
       saveContextForBackground({
         fiat: currentFiat,
         crypto: currentCrypto,
-        tradeType: currentTradeType,
+        tradeType: currentTradeType as 'buy' | 'sell',
         exchanges: exchangesToQuery
       });
       const triggered = await evaluateAlerts(newAds, {
         fiat: currentFiat,
         crypto: currentCrypto,
-        tradeType: currentTradeType
+        tradeType: currentTradeType as 'buy' | 'sell'
       });
       if (triggered) {
         const updatedAlerts = await getAlerts();
@@ -399,17 +399,6 @@ export default function TerminalScreen() {
       setTimeout(() => {
         bottomSheetModalRef.current?.present();
       }, 500);
-
-      try {
-        const saved = await storage.getItem('terminalReminder');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed?.crypto === DEFAULT_CRYPTO && parsed?.fiat === detectedFiat) {
-            setReminderThreshold(parsed.threshold ?? '');
-            setReminderActive(!!parsed.active);
-          }
-        }
-      } catch (e) {}
 
       try {
         const view = await storage.getItem('terminalView');
@@ -620,6 +609,7 @@ export default function TerminalScreen() {
                   <FlashList
                     data={section.data}
                     horizontal
+                    // @ts-ignore - TS types for FlashList are sometimes incomplete locally
                     estimatedItemSize={CARD_WIDTH + 12}
                     keyExtractor={(item: any, idx) => `${item.id ?? item.advNo ?? item.price}-${idx}`}
                     renderItem={({ item, index }: { item: any; index: number }) => {
