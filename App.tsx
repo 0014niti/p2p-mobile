@@ -40,6 +40,7 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
 
 import TerminalScreen from './src/screens/TerminalScreen';
 import ChatScreen from './src/screens/ChatScreen';
+import FloatingDock from './components/FloatingDock';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -51,42 +52,9 @@ function TabNavigator() {
 
   return (
     <Tab.Navigator
+      tabBar={props => <FloatingDock {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#10b981',
-        tabBarInactiveTintColor: colorScheme === 'dark' ? '#a1a1aa' : '#94a3b8',
-        tabBarStyle: {
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: Platform.OS === 'ios' ? 88 : 72,
-          borderTopWidth: 0,
-          elevation: 0,
-          backgroundColor: 'transparent',
-        },
-        tabBarBackground: () => (
-          <View 
-            style={{ 
-              flex: 1, 
-              backgroundColor: colorScheme === 'dark' ? 'rgba(9, 9, 11, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-              borderTopWidth: 1, 
-              borderTopColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' 
-            }} 
-          />
-        ),
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '800',
-          letterSpacing: 0.5,
-        },
-        tabBarActiveBackgroundColor: colorScheme === 'dark' ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.1)',
-        tabBarItemStyle: {
-          borderRadius: 24,
-          marginHorizontal: 10,
-          marginVertical: 8,
-          padding: 2,
-        },
         tabBarHideOnKeyboard: true,
       }}>
       <Tab.Screen

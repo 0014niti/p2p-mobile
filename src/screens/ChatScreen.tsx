@@ -184,7 +184,7 @@ export default function OtcNexusScreen() {
       />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={100}>
-        <View className="px-5 py-4 bg-white/90 dark:bg-zinc-950/90 border-t border-zinc-100 dark:border-zinc-800 flex-row gap-3 pb-8 items-end">
+        <View className="px-5 py-4 bg-white/90 dark:bg-zinc-950/90 border-t border-zinc-100 dark:border-zinc-800 flex-row gap-3 pb-[100px] items-end">
           <TextInput
             value={inputText}
             onChangeText={setInputText}

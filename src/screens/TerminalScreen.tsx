@@ -14,8 +14,9 @@ import {
   SectionList,
   Dimensions,
   ScrollView,
-  Linking,
-  Image
+  Image,
+  StyleSheet,
+  Linking
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,6 +36,7 @@ import {
   BottomSheetFlatList
 } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
+import { FlashList } from '@shopify/flash-list';
 
 import AdCard from '../../components/AdCard';
 import CompareCard from '../../components/CompareCard';
@@ -614,32 +616,36 @@ export default function TerminalScreen() {
                    </View>
                 </View>
               ) : (
-                <Animated.FlatList
-                  data={section.data}
-                  horizontal
-                  keyExtractor={(item: any, idx) => `${item.id ?? item.advNo ?? item.price}-${idx}`}
-                  renderItem={({ item }: { item: any }) => {
-                    const id = item.id ?? item.advNo ?? item.price;
-                    return (
-                      <View style={{ width: CARD_WIDTH }}>
-                        <AdCard 
-                          ad={item} 
-                          fiat={fiat} 
-                          crypto={crypto} 
-                          exchange={section.title} 
-                          tradeType={tradeType}
-                          isExpanded={expandedAdId === id}
-                          onToggle={() => setExpandedAdId(expandedAdId === id ? null : id)}
-                        />
-                      </View>
-                    );
-                  }}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ paddingHorizontal: 16, gap: 12, alignItems: 'flex-start' }}
-                  snapToInterval={SNAP_INTERVAL}
-                  snapToAlignment="start"
-                  decelerationRate="fast"
-                />
+                <View style={{ width: '100%', minHeight: 160 }}>
+                  <FlashList
+                    data={section.data}
+                    horizontal
+                    estimatedItemSize={CARD_WIDTH + 12}
+                    keyExtractor={(item: any, idx) => `${item.id ?? item.advNo ?? item.price}-${idx}`}
+                    renderItem={({ item, index }: { item: any; index: number }) => {
+                      const id = item.id ?? item.advNo ?? item.price;
+                      return (
+                        <View style={{ width: CARD_WIDTH, marginRight: 12 }}>
+                          <AdCard 
+                            ad={item} 
+                            fiat={fiat} 
+                            crypto={crypto} 
+                            exchange={section.title} 
+                            tradeType={tradeType}
+                            isExpanded={expandedAdId === id}
+                            onToggle={() => setExpandedAdId(expandedAdId === id ? null : id)}
+                            index={index}
+                          />
+                        </View>
+                      );
+                    }}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 16 }}
+                    snapToInterval={SNAP_INTERVAL}
+                    snapToAlignment="start"
+                    decelerationRate="fast"
+                  />
+                </View>
               )}
               </View>
             </View>
@@ -655,6 +661,7 @@ export default function TerminalScreen() {
         detached={true}
         bottomInset={100}
         style={{ marginHorizontal: 16 }}
+        animationConfigs={{ damping: 30, stiffness: 300, mass: 1 }}
         backdropComponent={(props) => (
           <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" />
         )}

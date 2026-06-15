@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Alert, Image } from 'react-native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { PriceAlert, addAlert, removeAlert } from '../src/lib/alerts';
@@ -77,19 +77,21 @@ export default function AlertSetupModal({
         
         <View className="bg-white/60 dark:bg-zinc-900/60 rounded-2xl p-4 border border-zinc-200/50 dark:border-zinc-800/50 mb-6">
           <Text className="text-[11px] font-bold text-zinc-500 mb-2">Select Exchange</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+          <BottomSheetScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
             {activeExchanges.map(ex => (
               <TouchableOpacity
                 key={ex}
                 onPress={() => setSelectedExchange(ex)}
-                className={`px-4 py-2 rounded-xl mr-2 border ${selectedExchange === ex ? 'bg-indigo-500 border-indigo-400' : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700'}`}
+                className={`w-12 h-12 rounded-2xl mr-3 border-2 items-center justify-center shadow-sm ${selectedExchange === ex ? 'bg-emerald-50 border-emerald-400 dark:bg-emerald-900/30' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700'}`}
               >
-                <Text className={`text-xs font-black uppercase tracking-widest ${selectedExchange === ex ? 'text-white' : 'text-zinc-600 dark:text-zinc-300'}`}>
-                  {ex}
-                </Text>
+                <Image 
+                  source={{ uri: `https://www.google.com/s2/favicons?domain=${ex.toLowerCase()}.com&sz=128` }} 
+                  style={{ width: 24, height: 24, borderRadius: 6 }} 
+                  className={selectedExchange !== ex ? 'opacity-60' : 'opacity-100'}
+                />
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </BottomSheetScrollView>
 
           <Text className="text-[11px] font-bold text-zinc-500 mb-2">Target Price ({fiat})</Text>
           <View className="flex-row items-center gap-2">

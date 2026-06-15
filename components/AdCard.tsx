@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Linking, Share, Text, TouchableOpacity, View, ScrollView, Image } from 'react-native';
-import Animated, { LinearTransition } from 'react-native-reanimated';
+import { Linking, Share, Text, TouchableOpacity, View, ScrollView, Image, Pressable, StyleSheet } from 'react-native';
+import Animated, { FadeInDown, LinearTransition, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useColorScheme } from 'nativewind';
 
 function AdCard({
   ad,
@@ -10,7 +11,8 @@ function AdCard({
   exchange,
   tradeType,
   isExpanded,
-  onToggle
+  onToggle,
+  index
 }: {
   ad: any;
   fiat: string;
@@ -19,9 +21,12 @@ function AdCard({
   tradeType?: string;
   isExpanded?: boolean;
   onToggle?: () => void;
+  index?: number;
 }) {
   const [localDetailsOpen, setLocalDetailsOpen] = useState(false);
   const detailsOpen = isExpanded !== undefined ? isExpanded : localDetailsOpen;
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   const handleToggle = () => {
     if (onToggle) onToggle();
@@ -139,12 +144,31 @@ function AdCard({
     }
   };
 
+  const pressedScale = useSharedValue(1);
+
+  const animatedScaleStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: pressedScale.value }],
+    };
+  });
+
   return (
-    <View 
-      className="bg-white/80 dark:bg-zinc-900/80 border border-white/50 dark:border-zinc-700/50 rounded-2xl p-3 mb-3 shadow-[0_4px_15px_rgba(0,0,0,0.05)] overflow-hidden"
+    <Animated.View 
+      entering={FadeInDown.duration(300).delay(Math.min((index || 0) * 40, 400))}
+      layout={LinearTransition.duration(200)}
+      className="mb-3"
     >
-      <TouchableOpacity
-        activeOpacity={0.8}
+      <Animated.View 
+        style={animatedScaleStyle}
+        className="bg-white/80 dark:bg-zinc-900/80 border border-white/50 dark:border-zinc-700/50 rounded-2xl p-3 shadow-[0_4px_15px_rgba(0,0,0,0.05)] overflow-hidden"
+      >
+      <Pressable
+        onPressIn={() => {
+          pressedScale.value = withTiming(0.97, { duration: 100 });
+        }}
+        onPressOut={() => {
+          pressedScale.value = withTiming(1, { duration: 100 });
+        }}
         onPress={handleToggle}
       >
         <View className="mb-2">
@@ -201,7 +225,7 @@ function AdCard({
             />
           </View>
         </View>
-      </TouchableOpacity>
+      </Pressable>
 
       {detailsOpen && (
         <View className="mt-3 pt-3 border-t border-zinc-100/50 dark:border-zinc-800/50">
@@ -252,7 +276,8 @@ function AdCard({
           </View>
         </View>
       )}
-    </View>
+      </Animated.View>
+    </Animated.View>
   );
 }
 
