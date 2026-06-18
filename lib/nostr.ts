@@ -14,7 +14,7 @@ function hexToBytes(hex: string): Uint8Array {
 const RELAYS = [
     'wss://relay.damus.io',
     'wss://nos.lol',
-    'wss://relay.primal.net'
+    'wss://relay.nostr.band'
 ];
 
 const pool = new SimplePool();
@@ -35,20 +35,19 @@ export function useNostrEngine(fiatTicker: string = 'USD') {
     const [username, setUsernameState] = useState<string | null>(null);
     const [isRestoredAccount, setIsRestoredAccount] = useState(false);
     const [keys, setKeys] = useState<{ secret: string | null; public: string | null }>({ secret: null, public: null });
-
-    const activeSockets = useRef<WebSocket[]>([]);
+    const activeSockets = useRef<{ [url: string]: WebSocket }>({});
+    const reconnectTimeouts = useRef<{ [url: string]: NodeJS.Timeout }>({});
 
     useEffect(() => {
         initializeKeys();
         return () => {
-            activeSockets.current.forEach(ws => ws.close());
+            Object.values(activeSockets.current).forEach(ws => ws.close());
+            Object.values(reconnectTimeouts.current).forEach(t => clearTimeout(t));
         };
     }, []);
 
     useEffect(() => {
-        if (keys.public) {
-            subscribeToChannel(fiatTicker);
-        }
+        subscribeToChannel(fiatTicker);
     }, [keys.public, fiatTicker]);
 
     const initializeKeys = async () => {
@@ -153,7 +152,13 @@ export function useNostrEngine(fiatTicker: string = 'USD') {
                         id: event.id, pubkey: event.pubkey, created_at: event.created_at,
                         username: isSender ? "You" : "VIP", content: decrypted, targetPubkey: targetPubkey
                     };
-                    return [...prev, newMessage].sort((a, b) => a.created_at - b.created_at);
+                    const newState = [...prev, newMessage].sort((a, b) => a.created_at - b.created_at);
+                    
+                    // Group and save to persistent storage for InboxScreen
+                    const threadMessages = newState.filter(m => m.targetPubkey === targetPubkey);
+                    AsyncStorage.setItem(`@p2p_dms_${targetPubkey}`, JSON.stringify(threadMessages)).catch(() => {});
+                    
+                    return newState;
                 });
             } catch(e) {}
         }
@@ -162,34 +167,66 @@ export function useNostrEngine(fiatTicker: string = 'USD') {
     const subscribeToChannel = (ticker: string) => {
         const hashtag = `p2potc_${ticker.toLowerCase()}`;
         
-        activeSockets.current.forEach(ws => ws.close());
-        activeSockets.current = [];
+        Object.values(activeSockets.current).forEach(ws => {
+            (ws as any).isIntentionalClose = true;
+            ws.close();
+        });
+        Object.values(reconnectTimeouts.current).forEach(t => clearTimeout(t));
+        activeSockets.current = {};
+        reconnectTimeouts.current = {};
+        
         setMessages([]);
         setDmMessages([]);
 
-        if (!keys.public) return;
-
         const subId = `otc-sub-${Math.floor(Math.random() * 10000)}`;
-        const reqPayload = JSON.stringify([
-            "REQ", subId, 
-            { kinds: [1], '#t': [hashtag], limit: 100 },
-            { kinds: [4], '#p': [keys.public], limit: 50 },
-            { kinds: [4], authors: [keys.public], limit: 50 }
-        ]);
+        
+        const filters = [
+            { kinds: [1], '#t': [hashtag], limit: 100 }
+        ];
 
-        RELAYS.forEach(url => {
+        if (keys.public) {
+            filters.push({ kinds: [4], '#p': [keys.public], limit: 50 });
+            filters.push({ kinds: [4], authors: [keys.public], limit: 50 });
+        }
+        
+        const reqPayload = JSON.stringify(["REQ", subId, ...filters]);
+
+        const connectRelay = (url: string, retryCount = 0) => {
             try {
                 const ws = new WebSocket(url);
-                ws.onopen = () => { ws.send(reqPayload); setIsConnected(true); };
-                ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    if (data[0] === "EVENT" && data[1] === subId) {
-                        handleIncomingEvent(data[2]);
-                    }
+                
+                ws.onopen = () => { 
+                    ws.send(reqPayload); 
+                    setIsConnected(true); 
+                    activeSockets.current[url] = ws;
                 };
-                activeSockets.current.push(ws);
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data[0] === "EVENT" && data[1] === subId) {
+                            handleIncomingEvent(data[2]);
+                        }
+                    } catch (e) {}
+                };
+                
+                ws.onclose = () => {
+                    if ((ws as any).isIntentionalClose) return;
+                    delete activeSockets.current[url];
+                    // Auto-reconnect with exponential backoff (max 10s)
+                    const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+                    reconnectTimeouts.current[url] = setTimeout(() => {
+                        connectRelay(url, retryCount + 1);
+                    }, delay);
+                };
+                
+                ws.onerror = () => {
+                    ws.close();
+                };
             } catch (err) {}
-        });
+        };
+
+        RELAYS.forEach(url => connectRelay(url));
     };
 
     const sendMessage = async (content: string) => {

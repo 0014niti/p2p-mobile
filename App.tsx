@@ -10,16 +10,17 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { SymbolView } from 'expo-symbols';
 import { View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
+import { registerBackgroundNostrSync } from './src/lib/backgroundEngine';
 import { useColorScheme } from './components/useColorScheme';
 
 const BACKGROUND_FETCH_TASK = 'background-fetch-ads';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldShowBanner: true,
     shouldShowList: true,
     shouldPlaySound: true,
@@ -40,6 +41,7 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
 
 import TerminalScreen from './src/screens/TerminalScreen';
 import ChatScreen from './src/screens/ChatScreen';
+import InboxScreen from './src/screens/InboxScreen';
 import FloatingDock from './components/FloatingDock';
 
 SplashScreen.preventAutoHideAsync();
@@ -72,6 +74,13 @@ function TabNavigator() {
               size={28}
             />
           ),
+        }}
+      />
+      <Tab.Screen 
+        name="Inbox" 
+        component={InboxScreen} 
+        options={{
+          tabBarIcon: ({ color }) => <Ionicons name="mail" size={24} color={color} />,
         }}
       />
       <Tab.Screen
@@ -131,7 +140,9 @@ export default function App() {
         console.log('Background fetch registration failed:', err);
       }
     }
+    
     setupNotifications();
+    registerBackgroundNostrSync();
   }, []);
 
   if (!loaded) {

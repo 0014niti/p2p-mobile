@@ -63,13 +63,14 @@ function parseOffer(content: string) {
   return { isOffer: false, text: content };
 }
 
-export default function OtcNexusScreen() {
+export default function OtcNexusScreen({ route, navigation }: any) {
   const [fiat, setFiat] = useState('USD');
   const [inputText, setInputText] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [activeDmPubkey, setActiveDmPubkey] = useState<string | null>(null);
   const [activeDmUsername, setActiveDmUsername] = useState<string>('');
   const [activeDmOffer, setActiveDmOffer] = useState<any>(null);
+  const [accountModalVisible, setAccountModalVisible] = useState(false);
 
   const [tradeType, setTradeType] = useState('WTS');
   const [tradeCoin, setTradeCoin] = useState('USDT');
@@ -91,7 +92,13 @@ export default function OtcNexusScreen() {
   } = useNostrEngine(fiat);
 
   const flatListRef = useRef<FlatList>(null);
-  const accountModalRef = useRef<BottomSheetModal>(null);
+
+  useEffect(() => {
+    if (route?.params?.dmPubkey) {
+      setActiveDmPubkey(route.params.dmPubkey);
+      setActiveDmUsername('VIP Contact'); // Default fallback for inbox navigation
+    }
+  }, [route?.params?.dmPubkey]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -101,6 +108,8 @@ export default function OtcNexusScreen() {
     }
   }, [messages.length]);
 
+
+
   const handleSendDM = async () => {
     if (!inputText.trim() || !activeDmPubkey) return;
     await sendDM(activeDmPubkey, inputText.trim());
@@ -108,6 +117,10 @@ export default function OtcNexusScreen() {
   };
 
   const handleGlobalSend = async () => {
+    if (!username) {
+        setAccountModalVisible(true);
+        return;
+    }
     if (!tradePrice || !tradeNote.trim()) return;
     const content = `[${tradeType}] ${tradeCoin} for ${fiat} @ ${tradePrice}\n📝 Note: ${tradeNote.slice(0, 100)}`;
     await sendMessage(content);
@@ -141,7 +154,7 @@ export default function OtcNexusScreen() {
                     { text: "Cancel", style: "cancel" },
                     { 
                       text: "Open Account", 
-                      onPress: () => accountModalRef.current?.present() 
+                      onPress: () => setAccountModalVisible(true) 
                     }
                   ]
                 );
@@ -239,7 +252,7 @@ export default function OtcNexusScreen() {
             </View>
             <View className="flex-row items-center gap-2">
               <TouchableOpacity 
-                onPress={() => accountModalRef.current?.present()}
+                onPress={() => setAccountModalVisible(true)}
                 className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-2 rounded-xl shadow-sm flex-row items-center gap-1.5"
               >
                 {username ? (
@@ -328,14 +341,22 @@ export default function OtcNexusScreen() {
               onChangeText={setInputText}
               placeholder="Type a secure message..."
               placeholderTextColor="#94a3b8"
-              editable={!!username}
               multiline
               className="flex-1 bg-zinc-50 dark:bg-zinc-900 border-2 border-zinc-100 dark:border-zinc-800 rounded-[28px] px-5 py-3.5 pt-4 text-sm font-medium text-zinc-900 dark:text-white max-h-32"
             />
             <TouchableOpacity
-              onPress={handleSendDM}
-              disabled={!username || !inputText.trim()}
-              className={`w-14 h-14 rounded-full items-center justify-center shadow-md active:opacity-80 ${username && inputText.trim() ? 'bg-emerald-500' : 'bg-zinc-200 dark:bg-zinc-800'
+              onPress={() => {
+                if (!username) {
+                  setAccountModalVisible(true);
+                  return;
+                }
+                if (!inputText.trim()) {
+                  Alert.alert("Empty Message", "Please type a message first.");
+                  return;
+                }
+                handleSendDM();
+              }}
+              className={`w-14 h-14 rounded-full items-center justify-center shadow-md active:opacity-80 ${inputText.trim() ? 'bg-emerald-500' : 'bg-zinc-200 dark:bg-zinc-800'
                 }`}
             >
               <Text className="text-2xl ml-1">✨</Text>
@@ -364,7 +385,6 @@ export default function OtcNexusScreen() {
                 keyboardType="decimal-pad"
                 placeholder={`Rate (${fiat})`}
                 placeholderTextColor="#94a3b8"
-                editable={!!username}
                 className="flex-1 bg-white dark:bg-zinc-900 border-2 border-zinc-100 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-black text-zinc-900 dark:text-white shadow-sm"
               />
             </View>
@@ -372,16 +392,24 @@ export default function OtcNexusScreen() {
               <TextInput
                 value={tradeNote}
                 onChangeText={setTradeNote}
-                placeholder={!username ? "Join to trade..." : "Add terms..."}
+                placeholder="Add terms..."
                 placeholderTextColor="#94a3b8"
                 maxLength={100}
-                editable={!!username}
                 className="flex-1 bg-white dark:bg-zinc-900 border-2 border-zinc-100 dark:border-zinc-800 rounded-xl px-4 py-3.5 text-sm font-medium text-zinc-900 dark:text-white shadow-sm"
               />
               <TouchableOpacity
-                onPress={handleGlobalSend}
-                disabled={!username || !tradePrice || !tradeNote.trim()}
-                className={`px-6 py-3.5 rounded-xl justify-center items-center shadow-md ${!username || !tradePrice || !tradeNote.trim() ? 'bg-zinc-200 dark:bg-zinc-800' : 'bg-blue-600'}`}
+                onPress={() => {
+                  if (!username) {
+                    setAccountModalVisible(true);
+                    return;
+                  }
+                  if (!tradePrice || !tradeNote.trim()) {
+                    Alert.alert("Missing Details", "Please enter a rate and terms before posting.");
+                    return;
+                  }
+                  handleGlobalSend();
+                }}
+                className={`px-6 py-3.5 rounded-xl justify-center items-center shadow-md ${!tradePrice || !tradeNote.trim() ? 'bg-zinc-200 dark:bg-zinc-800' : 'bg-blue-600'}`}
               >
                 <Text className="text-white font-black">Post</Text>
               </TouchableOpacity>
@@ -391,7 +419,8 @@ export default function OtcNexusScreen() {
       </KeyboardAvoidingView>
 
       <AccountSetupModal
-        modalRef={accountModalRef}
+        visible={accountModalVisible}
+        onClose={() => setAccountModalVisible(false)}
         isDark={false}
         isRestoredAccount={isRestoredAccount}
         keys={keys}

@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Alert } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
-import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { View, Text, TouchableOpacity, TextInput, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface AccountSetupModalProps {
-  modalRef: React.RefObject<BottomSheetModal | null>;
+  visible: boolean;
+  onClose: () => void;
   isDark: boolean;
   isRestoredAccount: boolean;
   keys: { public: string | null, secret: string | null };
@@ -16,30 +15,28 @@ interface AccountSetupModalProps {
 }
 
 export default function AccountSetupModal({
-  modalRef, isDark, isRestoredAccount, keys, username, createOfficialAccount, restoreFromKey, logout
+  visible, onClose, isDark, isRestoredAccount, keys, username, createOfficialAccount, restoreFromKey, logout
 }: AccountSetupModalProps) {
   const [loginNameInput, setLoginNameInput] = useState('');
   const [restoreKeyInput, setRestoreKeyInput] = useState('');
   const [mode, setMode] = useState<'signup' | 'signin'>('signup');
+  const [showKey, setShowKey] = useState(false);
 
-  const copyPrivateKey = async () => {
-    if (keys.secret) {
-      await Clipboard.setStringAsync(keys.secret);
-      Alert.alert('Copied!', 'Your Private Key has been copied to the clipboard. Store it safely!');
-    }
+  const toggleKeyVisibility = () => {
+    setShowKey(!showKey);
   };
 
   const handleCreate = async () => {
     if (loginNameInput.trim().length < 2) return;
     await createOfficialAccount(loginNameInput.trim());
-    modalRef.current?.dismiss();
+    onClose();
   };
 
   const handleRestore = async () => {
     if (restoreKeyInput.trim().length < 60) return;
     const success = await restoreFromKey(restoreKeyInput.trim());
     if (success) {
-      modalRef.current?.dismiss();
+      onClose();
     } else {
       Alert.alert('Error', 'Invalid private key. Please check and try again.');
     }
@@ -56,7 +53,7 @@ export default function AccountSetupModal({
           style: 'destructive', 
           onPress: async () => {
             await logout();
-            modalRef.current?.dismiss();
+            onClose();
           } 
         }
       ]
@@ -64,33 +61,24 @@ export default function AccountSetupModal({
   };
 
   return (
-    <BottomSheetModal
-      ref={modalRef}
-      index={0}
-      snapPoints={['70%']}
-      enablePanDownToClose={true}
-      detached={true}
-      bottomInset={100}
-      style={{ marginHorizontal: 16 }}
-      backgroundComponent={({ style }) => (
-        <View style={[style, { 
-          overflow: 'hidden', 
-          borderRadius: 24,
-          backgroundColor: isDark ? 'rgba(24, 24, 27, 0.95)' : 'rgba(255, 255, 255, 0.95)'
-        }]} />
-      )}
-      backdropComponent={(props) => (
-        <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={isDark ? 0.7 : 0.4} />
-      )}
-      handleIndicatorStyle={{ backgroundColor: isDark ? '#52525b' : '#d4d4d8', width: 40 }}
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={onClose}
     >
-      <View className="flex-1 px-5 pt-2">
-        <View className="flex-row items-center justify-between mb-6">
-          <Text className="text-2xl font-black text-zinc-900 dark:text-white tracking-tight">Account</Text>
-          <TouchableOpacity onPress={() => modalRef.current?.dismiss()} className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 items-center justify-center">
-            <Ionicons name="close" size={18} color={isDark ? '#fff' : '#000'} />
-          </TouchableOpacity>
-        </View>
+      <View className="flex-1 justify-end bg-black/40">
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className={`w-full rounded-t-3xl pt-5 pb-10 px-5 ${isDark ? 'bg-zinc-900' : 'bg-white'}`}
+          style={{ maxHeight: '85%' }}
+        >
+          <View className="flex-row items-center justify-between mb-6">
+            <Text className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-zinc-900'}`}>Account</Text>
+            <TouchableOpacity onPress={onClose} className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 items-center justify-center">
+              <Ionicons name="close" size={18} color={isDark ? '#fff' : '#000'} />
+            </TouchableOpacity>
+          </View>
 
         {isRestoredAccount ? (
           <View>
@@ -111,12 +99,13 @@ export default function AccountSetupModal({
               <View className="flex-row gap-2">
                 <TextInput
                   value={keys.secret || ''}
-                  editable={false}
-                  secureTextEntry={true}
+                  readOnly={true}
+                  selectTextOnFocus={true}
+                  secureTextEntry={!showKey}
                   className="flex-1 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white rounded-xl px-4 py-3.5 text-xs font-mono"
                 />
-                <TouchableOpacity onPress={copyPrivateKey} className="px-5 bg-blue-100 dark:bg-blue-900/30 rounded-xl justify-center shadow-sm">
-                  <Text className="text-blue-700 dark:text-blue-400 text-xs font-bold">Copy</Text>
+                <TouchableOpacity onPress={toggleKeyVisibility} className="px-5 bg-blue-100 dark:bg-blue-900/30 rounded-xl justify-center shadow-sm">
+                  <Text className="text-blue-700 dark:text-blue-400 text-xs font-bold">{showKey ? 'Hide' : 'Reveal'}</Text>
                 </TouchableOpacity>
               </View>
               <View className="mt-3 bg-rose-50 dark:bg-rose-900/20 p-3 rounded-xl border border-rose-100 dark:border-rose-900/50">
@@ -194,7 +183,8 @@ export default function AccountSetupModal({
             )}
           </View>
         )}
+        </KeyboardAvoidingView>
       </View>
-    </BottomSheetModal>
+    </Modal>
   );
 }

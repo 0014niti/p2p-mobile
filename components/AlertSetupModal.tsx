@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, TextInput, Alert, Image } from 'react-native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,8 @@ export default function AlertSetupModal({
 }: AlertSetupModalProps) {
   const [selectedExchange, setSelectedExchange] = useState<string>(activeExchanges[0] || 'binance');
   const [targetPriceStr, setTargetPriceStr] = useState('');
+
+  const snapPoints = useMemo(() => ['70%'], []);
 
   const handleAddAlert = async () => {
     const price = parseFloat(targetPriceStr);
@@ -48,7 +50,7 @@ export default function AlertSetupModal({
     <BottomSheetModal
       ref={modalRef}
       index={0}
-      snapPoints={['70%']}
+      snapPoints={snapPoints}
       enablePanDownToClose={true}
       detached={true}
       bottomInset={100}

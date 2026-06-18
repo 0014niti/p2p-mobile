@@ -36,7 +36,7 @@ import {
   BottomSheetFlatList
 } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
-import { FlashList } from '@shopify/flash-list';
+import { FlatList } from 'react-native';
 
 import AdCard from '../../components/AdCard';
 import CompareCard from '../../components/CompareCard';
@@ -606,11 +606,9 @@ export default function TerminalScreen() {
                 </View>
               ) : (
                 <View style={{ width: '100%', minHeight: 160 }}>
-                  <FlashList
+                  <FlatList
                     data={section.data}
                     horizontal
-                    // @ts-ignore - TS types for FlashList are sometimes incomplete locally
-                    estimatedItemSize={CARD_WIDTH + 12}
                     keyExtractor={(item: any, idx) => `${item.id ?? item.advNo ?? item.price}-${idx}`}
                     renderItem={({ item, index }: { item: any; index: number }) => {
                       const id = item.id ?? item.advNo ?? item.price;
@@ -625,15 +623,18 @@ export default function TerminalScreen() {
                             isExpanded={expandedAdId === id}
                             onToggle={() => setExpandedAdId(expandedAdId === id ? null : id)}
                             index={index}
+                            isDark={isDark}
                           />
                         </View>
                       );
                     }}
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ paddingHorizontal: 16 }}
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 10 }}
                     snapToInterval={SNAP_INTERVAL}
                     snapToAlignment="start"
                     decelerationRate="fast"
+                    windowSize={5}
+                    removeClippedSubviews={false}
                   />
                 </View>
               )}

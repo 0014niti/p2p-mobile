@@ -22,11 +22,10 @@ function AdCard({
   isExpanded?: boolean;
   onToggle?: () => void;
   index?: number;
+  isDark?: boolean;
 }) {
   const [localDetailsOpen, setLocalDetailsOpen] = useState(false);
   const detailsOpen = isExpanded !== undefined ? isExpanded : localDetailsOpen;
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === 'dark';
 
   const handleToggle = () => {
     if (onToggle) onToggle();
